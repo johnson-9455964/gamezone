@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GameZone 管理后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#07090f;--sidebar:#0c0f1a;--card:#111827;--border:rgba(99,179,237,0.12);
+  --accent:#63b3ed;--accent2:#f6ad55;--danger:#fc8181;--success:#68d391;--warning:#f6e05e;
+  --text:#e2e8f0;--muted:#4a5568;--muted2:#718096;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;display:flex;min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+#loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 50% 0%,rgba(99,179,237,0.06),transparent);}
+.login-box{position:relative;width:380px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:40px;box-shadow:0 0 60px rgba(99,179,237,0.05);}
+.login-logo{font-family:'Orbitron',monospace;font-size:1.1rem;color:var(--accent);letter-spacing:3px;text-align:center;margin-bottom:6px;}
+.login-sub{text-align:center;font-size:0.72rem;color:var(--muted2);letter-spacing:2px;margin-bottom:30px;}
+.form-row{margin-bottom:16px;}
+.form-row label{display:block;font-size:0.72rem;color:var(--muted2);letter-spacing:1px;margin-bottom:6px;}
+.form-row input{width:100%;background:rgba(99,179,237,0.04);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--text);font-size:0.85rem;outline:none;font-family:'Noto Sans SC',sans-serif;transition:border .2s;}
+.form-row input:focus{border-color:rgba(99,179,237,0.4);}
+.login-err{color:var(--danger);font-size:0.75rem;margin-bottom:10px;display:none;}
+.btn-login-submit{width:100%;padding:11px;background:var(--accent);color:#07090f;font-weight:700;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem;font-family:'Noto Sans SC',sans-serif;margin-top:4px;transition:opacity .2s;letter-spacing:1px;}
+.btn-login-submit:hover{opacity:.85;}
+.login-hint{text-align:center;margin-top:16px;font-size:0.7rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-height:100vh;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50;transition:transform .3s;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo .logo-text{font-family:'Orbitron',monospace;font-size:1rem;color:var(--accent);letter-spacing:2px;}
+.sidebar-logo .logo-sub{font-size:0.65rem;color:var(--muted2);letter-spacing:2px;margin-top:3px;}
+.nav-section{padding:20px 12px 8px;font-size:0.6rem;color:var(--muted);letter-spacing:2px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:2px 8px;border-radius:6px;cursor:pointer;transition:all .2s;font-size:0.82rem;color:var(--muted2);}
+.nav-item:hover{background:rgba(99,179,237,0.06);color:var(--text);}
+.nav-item.active{background:rgba(99,179,237,0.1);color:var(--accent);border-left:2px solid var(--accent);}
+.nav-icon{width:18px;text-align:center;font-size:0.9rem;}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);}
+.admin-badge{display:flex;align-items:center;gap:10px;}
+.admin-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#07090f;flex-shrink:0;}
+.admin-name{font-size:.78rem;color:var(--text);}
+.admin-role{font-size:.62rem;color:var(--muted2);}
+.logout-btn{margin-top:10px;width:100%;padding:7px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted2);font-size:.72rem;cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:all .2s;}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(12,15,26,.6);backdrop-filter:blur(10px);position:sticky;top:0;z-index:40;}
+.page-title{font-family:'Orbitron',monospace;font-size:.95rem;color:var(--text);letter-spacing:2px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);}
+.status-txt{font-size:.72rem;color:var(--muted2);font-family:'IBM Plex Mono',monospace;}
+.refresh-btn{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted2);font-size:.72rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .2s;}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* PAGES */
+.page{display:none;padding:28px;}
+.page.active{display:block;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden;transition:border .2s;}
+.stat-card:hover{border-color:rgba(99,179,237,0.25);}
+.stat-card::after{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 0 0 60px;opacity:.04;}
+.sc-label{font-size:.68rem;color:var(--muted2);letter-spacing:2px;margin-bottom:10px;}
+.sc-value{font-family:'IBM Plex Mono',monospace;font-size:1.8rem;font-weight:600;line-height:1;}
+.sc-change{font-size:.72rem;margin-top:8px;display:flex;align-items:center;gap:4px;}
+.up{color:var(--success);}
+.down{color:var(--danger);}
+.sc-icon{position:absolute;top:16px;right:16px;font-size:1.5rem;opacity:.3;}
+
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:28px;}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;}
+.chart-title{font-size:.78rem;color:var(--muted2);letter-spacing:2px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.chart-title span{font-family:'IBM Plex Mono',monospace;}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;}
+.bar{width:100%;border-radius:3px 3px 0 0;transition:height .5s ease;position:relative;cursor:pointer;}
+.bar:hover{filter:brightness(1.3);}
+.bar-label{font-size:.58rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.donut-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.donut-legend{width:100%;display:flex;flex-direction:column;gap:8px;}
+.legend-item{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;}
+.legend-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;flex-shrink:0;}
+
+/* TABLE */
+.table-box{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:28px;}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-header h3{font-size:.82rem;color:var(--text);letter-spacing:1px;}
+.tbl-search{padding:6px 12px;background:rgba(99,179,237,.04);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:.75rem;outline:none;font-family:'Noto Sans SC',sans-serif;width:200px;}
+.tbl-search:focus{border-color:rgba(99,179,237,.3);}
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 16px;text-align:left;font-size:.65rem;color:var(--muted2);letter-spacing:2px;border-bottom:1px solid var(--border);font-weight:400;}
+td{padding:12px 16px;font-size:.8rem;border-bottom:1px solid rgba(99,179,237,.05);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(99,179,237,.03);}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;letter-spacing:1px;}
+.badge-green{background:rgba(104,211,145,.12);color:var(--success);}
+.badge-red{background:rgba(252,129,129,.12);color:var(--danger);}
+.badge-yellow{background:rgba(246,224,94,.12);color:var(--warning);}
+.badge-blue{background:rgba(99,179,237,.12);color:var(--accent);}
+.tbl-btn{padding:4px 10px;border-radius:4px;font-size:.68rem;cursor:pointer;border:1px solid;font-family:'Noto Sans SC',sans-serif;transition:all .2s;}
+.tbl-btn-edit{border-color:rgba(99,179,237,.3);color:var(--accent);background:transparent;}
+.tbl-btn-edit:hover{background:rgba(99,179,237,.1);}
+.tbl-btn-del{border-color:rgba(252,129,129,.3);color:var(--danger);background:transparent;}
+.tbl-btn-del:hover{background:rgba(252,129,129,.1);}
+.tbl-btn-toggle{border-color:rgba(104,211,145,.3);color:var(--success);background:transparent;}
+.tbl-btn-toggle:hover{background:rgba(104,211,145,.1);}
+
+/* TOGGLE SWITCH */
+.toggle{position:relative;display:inline-block;width:36px;height:20px;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;border-radius:20px;background:#2d3748;cursor:pointer;transition:.3s;}
+.slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;border-radius:50%;background:#718096;transition:.3s;}
+input:checked+.slider{background:rgba(104,211,145,.3);}
+input:checked+.slider:before{background:var(--success);transform:translateX(16px);}
+
+/* MINI SPARKLINE */
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:24px;}
+.spark-bar{width:4px;border-radius:1px;background:var(--accent);opacity:.5;}
+
+/* AD REVENUE TABLE */
+.revenue-row td:nth-child(3){font-family:'IBM Plex Mono',monospace;color:var(--success);}
+.revenue-row td:nth-child(4){font-family:'IBM Plex Mono',monospace;color:var(--accent2);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:6px;font-size:.8rem;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .chart-grid{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .hamburger-btn{display:flex;}
+}
+.hamburger-btn{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:4px;background:none;border:none;}
+.hamburger-btn span{width:20px;height:2px;background:var(--muted2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">GAMEZONE</div>
+    <div class="login-sub">管理员后台 · ADMIN PANEL</div>
+    <div class="login-err" id="loginErr">❌ 用户名或密码错误</div>
+    <div class="form-row"><label>用户名</label><input type="text" id="adminUser" placeholder="admin" value="admin"/></div>
+    <div class="form-row"><label>密码</label><input type="password" id="adminPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+    <button class="btn-login-submit" onclick="doAdminLogin()">进入后台</button>
+    <div class="login-hint">默认: admin / admin123</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">GAMEZONE</div>
+    <div class="logo-sub">管理控制台</div>
+  </div>
+  <div class="nav-section">概览</div>
+  <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>数据概览</div>
+  <div class="nav-section">管理</div>
+  <div class="nav-item" onclick="showPage('users',this)"><span class="nav-icon">👥</span>用户管理</div>
+  <div class="nav-item" onclick="showPage('games',this)"><span class="nav-icon">🎮</span>游戏管理</div>
+  <div class="nav-item" onclick="showPage('ads',this)"><span class="nav-icon">💰</span>广告收入</div>
+  <div class="nav-item" onclick="showPage('stats',this)"><span class="nav-icon">📈</span>访问统计</div>
+  <div class="sidebar-footer">
+    <div class="admin-badge">
+      <div class="admin-avatar">管</div>
+      <div><div class="admin-name">超级管理员</div><div class="admin-role">Administrator</div></div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">退出登录</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main" id="mainContent" style="display:none;">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')"><span></span><span></span><span></span></button>
+      <div class="page-title" id="pageTitle">数据概览</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <div class="status-txt">系统正常运行</div>
+      <button class="refresh-btn" onclick="refreshData()">⟳ 刷新</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="sc-icon">👥</div>
+        <div class="sc-label">总用户数</div>
+        <div class="sc-value" style="color:var(--accent)" id="totalUsers">24,831</div>
+        <div class="sc-change up">↑ 12.4% 较上月</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">🟢</div>
+        <div class="sc-label">在线用户</div>
+        <div class="sc-value" style="color:var(--success)" id="onlineUsers">1,284</div>
+        <div class="sc-change up">↑ 实时数据</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">💰</div>
+        <div class="sc-label">本月广告收入</div>
+        <div class="sc-value" style="color:var(--accent2)">¥8,420</div>
+        <div class="sc-change up">↑ 23.1% 较上月</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">🎮</div>
+        <div class="sc-label">游戏总局数</div>
+        <div class="sc-value" style="color:var(--warning)">186,492</div>
+        <div class="sc-change up">↑ 8.7% 较上月</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">👁</div>
+        <div class="sc-label">今日访问量</div>
+        <div class="sc-value" style="color:var(--text)">43,210</div>
+        <div class="sc-change down">↓ 3.2% 较昨日</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">📢</div>
+        <div class="sc-label">广告点击率</div>
+        <div class="sc-value" style="color:var(--accent2)">3.8%</div>
+        <div class="sc-change up">↑ 0.4% 较上月</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-box">
+        <div class="chart-title">每日访问量 <span style="color:var(--accent)">本周</span></div>
+        <div class="bar-chart" id="visitChart"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">游戏热度分布</div>
+        <div class="donut-wrap">
+          <svg width="120" height="120" viewBox="0 0 120 120" id="donutSvg"></svg>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-box">
+      <div class="table-header"><h3>📋 最近注册用户</h3></div>
+      <table>
+        <tr><th>用户</th><th>注册时间</th><th>游戏次数</th><th>状态</th></tr>
+        <tr><td>🎮 龙王传说</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted2)">2026-06-05 14:32</td><td>128</td><td><span class="badge badge-green">正常</span></td></tr>
+        <tr><td>⚔️ 星辰玩家</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted2)">2026-06-05 12:18</td><td>76</td><td><span class="badge badge-green">正常</span></td></tr>
+        <tr><td>🚀 火焰剑客</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted2)">2026-06-04 22:45</td><td>43</td><td><span class="badge badge-yellow">待验证</span></td></tr>
+        <tr><td>🏆 暗影刺客</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted2)">2026-06-04 18:09</td><td>210</td><td><span class="badge badge-green">正常</span></td></tr>
+        <tr><td>💫 冰霜法师</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted2)">2026-06-03 09:55</td><td>5</td><td><span class="badge badge-red">已封禁</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="page" id="page-users">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sc-icon">👥</div><div class="sc-label">总用户</div><div class="sc-value" style="color:var(--accent)">24,831</div><div class="sc-change up">↑ 12.4%</div></div>
+      <div class="stat-card"><div class="sc-icon">🟢</div><div class="sc-label">活跃用户</div><div class="sc-value" style="color:var(--success)">18,420</div><div class="sc-change up">↑ 5.2%</div></div>
+      <div class="stat-card"><div class="sc-icon">🔴</div><div class="sc-label">封禁用户</div><div class="sc-value" style="color:var(--danger)">142</div><div class="sc-change down">↑ 3</div></div>
+      <div class="stat-card"><div class="sc-icon">⏳</div><div class="sc-label">待验证</div><div class="sc-value" style="color:var(--warning)">289</div><div class="sc-change">本周新增</div></div>
+    </div>
+    <div class="table-box">
+      <div class="table-header">
+        <h3>👥 用户列表</h3>
+        <input class="tbl-search" placeholder="搜索用户名..." oninput="filterTable('userTable',this.value)"/>
+      </div>
+      <table id="userTable">
+        <tr><th>ID</th><th>用户名</th><th>邮箱</th><th>游戏次数</th><th>注册时间</th><th>状态</th><th>操作</th></tr>
+        <tr><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2);font-size:.72rem">#10041</td><td>🎮 龙王传说</td><td style="color:var(--muted2);font-size:.75rem">longwang@gmail.com</td><td>1,284</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted2)">2026-01-12</td><td><span class="badge badge-green">正常</span></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('编辑用户功能开发中')">编辑</button><button class="tbl-btn tbl-btn-del" onclick="showToast('已发送封禁通知')">封禁</button></td></tr>
+        <tr><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2);font-size:.72rem">#10040</td><td>⚔️ 星辰玩家</td><td style="color:var(--muted2);font-size:.75rem">xingchen@qq.com</td><td>876</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted2)">2026-01-20</td><td><span class="badge badge-green">正常</span></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('编辑用户功能开发中')">编辑</button><button class="tbl-btn tbl-btn-del" onclick="showToast('已发送封禁通知')">封禁</button></td></tr>
+        <tr><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2);font-size:.72rem">#10039</td><td>🚀 火焰剑客</td><td style="color:var(--muted2);font-size:.75rem">huoyan@163.com</td><td>432</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted2)">2026-02-08</td><td><span class="badge badge-yellow">待验证</span></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('编辑用户功能开发中')">编辑</button><button class="tbl-btn tbl-btn-toggle" onclick="showToast('已发送验证邮件')">验证</button></td></tr>
+        <tr><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2);font-size:.72rem">#10038</td><td>🏆 竞技之王</td><td style="color:var(--muted2);font-size:.75rem">jingji@sina.com</td><td>2,100</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted2)">2025-12-30</td><td><span class="badge badge-green">正常</span></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('编辑用户功能开发中')">编辑</button><button class="tbl-btn tbl-btn-del" onclick="showToast('已发送封禁通知')">封禁</button></td></tr>
+        <tr><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2);font-size:.72rem">#10037</td><td>💫 冰霜法师</td><td style="color:var(--muted2);font-size:.75rem">bingshuang@126.com</td><td>38</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted2)">2026-03-15</td><td><span class="badge badge-red">已封禁</span></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-toggle" onclick="showToast('用户已解封')">解封</button></td></tr>
+        <tr><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2);font-size:.72rem">#10036</td><td>🌟 神话勇士</td><td style="color:var(--muted2);font-size:.75rem">shenhua@hotmail.com</td><td>654</td><td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted2)">2026-02-22</td><td><span class="badge badge-green">正常</span></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('编辑用户功能开发中')">编辑</button><button class="tbl-btn tbl-btn-del" onclick="showToast('已发送封禁通知')">封禁</button></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- GAMES -->
+  <div class="page" id="page-games">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sc-icon">🎮</div><div class="sc-label">游戏总数</div><div class="sc-value" style="color:var(--accent)">9</div><div class="sc-change up">已上架 7</div></div>
+      <div class="stat-card"><div class="sc-icon">🔥</div><div class="sc-label">今日总局数</div><div class="sc-value" style="color:var(--warning)">12,840</div><div class="sc-change up">↑ 8.2%</div></div>
+      <div class="stat-card"><div class="sc-icon">⏱</div><div class="sc-label">平均游戏时长</div><div class="sc-value" style="color:var(--success)">8.4<span style="font-size:1rem">分</span></div><div class="sc-change up">↑ 1.2分</div></div>
+      <div class="stat-card"><div class="sc-icon">⭐</div><div class="sc-label">平均评分</div><div class="sc-value" style="color:var(--accent2)">4.7</div><div class="sc-change up">用户评价</div></div>
+    </div>
+    <div class="table-box">
+      <div class="table-header"><h3>🎮 游戏列表</h3><button class="refresh-btn" onclick="showToast('新增游戏功能开发中')">+ 新增游戏</button></div>
+      <table>
+        <tr><th>游戏名</th><th>类型</th><th>今日局数</th><th>评分</th><th>趋势</th><th>状态</th><th>操作</th></tr>
+        <tr><td>🚀 星际战士</td><td><span class="badge badge-blue">射击</span></td><td style="font-family:'IBM Plex Mono',monospace">3,240</td><td style="color:var(--accent2)">★ 4.9</td><td><div class="sparkline" id="sp1"></div></td><td><label class="toggle"><input type="checkbox" checked onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+        <tr><td>🧩 益智迷宫</td><td><span class="badge badge-yellow">益智</span></td><td style="font-family:'IBM Plex Mono',monospace">2,180</td><td style="color:var(--accent2)">★ 4.7</td><td><div class="sparkline" id="sp2"></div></td><td><label class="toggle"><input type="checkbox" checked onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+        <tr><td>🏎️ 极速赛车</td><td><span class="badge badge-green">竞速</span></td><td style="font-family:'IBM Plex Mono',monospace">1,920</td><td style="color:var(--accent2)">★ 4.8</td><td><div class="sparkline" id="sp3"></div></td><td><label class="toggle"><input type="checkbox" checked onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+        <tr><td>🌿 生存荒野</td><td><span class="badge badge-blue">生存</span></td><td style="font-family:'IBM Plex Mono',monospace">1,540</td><td style="color:var(--accent2)">★ 4.5</td><td><div class="sparkline" id="sp4"></div></td><td><label class="toggle"><input type="checkbox" checked onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+        <tr><td>🏆 竞技擂台</td><td><span class="badge badge-red">格斗</span></td><td style="font-family:'IBM Plex Mono',monospace">2,840</td><td style="color:var(--accent2)">★ 4.9</td><td><div class="sparkline" id="sp5"></div></td><td><label class="toggle"><input type="checkbox" checked onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+        <tr><td>⚔️ 龙族传说</td><td><span class="badge badge-yellow">RPG</span></td><td style="font-family:'IBM Plex Mono',monospace">980</td><td style="color:var(--accent2)">★ 4.6</td><td><div class="sparkline" id="sp6"></div></td><td><label class="toggle"><input type="checkbox" onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+        <tr><td>🐉 神话大陆</td><td><span class="badge badge-blue">MMORPG</span></td><td style="font-family:'IBM Plex Mono',monospace">0</td><td style="color:var(--muted2)">未评分</td><td><div class="sparkline" id="sp7"></div></td><td><label class="toggle"><input type="checkbox" onchange="showToast('游戏状态已更新')"><span class="slider"></span></label></td><td style="display:flex;gap:6px;"><button class="tbl-btn tbl-btn-edit" onclick="showToast('游戏编辑功能开发中')">编辑</button></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADS -->
+  <div class="page" id="page-ads">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sc-icon">💰</div><div class="sc-label">本月总收入</div><div class="sc-value" style="color:var(--accent2)">¥8,420</div><div class="sc-change up">↑ 23.1%</div></div>
+      <div class="stat-card"><div class="sc-icon">📢</div><div class="sc-label">广告展示次数</div><div class="sc-value" style="color:var(--accent)">221,500</div><div class="sc-change up">↑ 18.4%</div></div>
+      <div class="stat-card"><div class="sc-icon">👆</div><div class="sc-label">点击次数</div><div class="sc-value" style="color:var(--success)">8,417</div><div class="sc-change up">CTR 3.8%</div></div>
+      <div class="stat-card"><div class="sc-icon">📊</div><div class="sc-label">每千次展示收入</div><div class="sc-value" style="color:var(--warning)">¥38.0</div><div class="sc-change up">↑ ¥4.2</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <div class="chart-title">每日广告收入 <span style="color:var(--accent2)">本月</span></div>
+        <div class="bar-chart" id="adChart"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">收入来源分布</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>横幅广告</span><span style="color:var(--accent2);font-family:'IBM Plex Mono',monospace">¥3,840 (45.6%)</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:45.6%;background:var(--accent2);border-radius:3px;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>侧边栏广告</span><span style="color:var(--accent);font-family:'IBM Plex Mono',monospace">¥2,180 (25.9%)</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:25.9%;background:var(--accent);border-radius:3px;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>内容中间广告</span><span style="color:var(--success);font-family:'IBM Plex Mono',monospace">¥1,620 (19.2%)</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:19.2%;background:var(--success);border-radius:3px;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>游戏内广告</span><span style="color:var(--warning);font-family:'IBM Plex Mono',monospace">¥780 (9.3%)</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:9.3%;background:var(--warning);border-radius:3px;"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-box">
+      <div class="table-header"><h3>💰 收入明细记录</h3></div>
+      <table>
+        <tr><th>日期</th><th>广告位</th><th>收入</th><th>点击数</th><th>展示数</th><th>CTR</th></tr>
+        <tr class="revenue-row"><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem">2026-06-05</td><td>横幅广告</td><td>¥142.80</td><td style="font-family:'IBM Plex Mono',monospace">428</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2)">8,420</td><td><span class="badge badge-green">5.1%</span></td></tr>
+        <tr class="revenue-row"><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem">2026-06-05</td><td>侧边栏广告</td><td>¥89.40</td><td style="font-family:'IBM Plex Mono',monospace">210</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2)">6,300</td><td><span class="badge badge-yellow">3.3%</span></td></tr>
+        <tr class="revenue-row"><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem">2026-06-04</td><td>横幅广告</td><td>¥138.20</td><td style="font-family:'IBM Plex Mono',monospace">398</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2)">8,100</td><td><span class="badge badge-green">4.9%</span></td></tr>
+        <tr class="revenue-row"><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem">2026-06-04</td><td>内容中间</td><td>¥62.10</td><td style="font-family:'IBM Plex Mono',monospace">186</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2)">4,200</td><td><span class="badge badge-yellow">4.4%</span></td></tr>
+        <tr class="revenue-row"><td style="font-family:'IBM Plex Mono',monospace;font-size:.75rem">2026-06-03</td><td>游戏内广告</td><td>¥28.50</td><td style="font-family:'IBM Plex Mono',monospace">95</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted2)">3,800</td><td><span class="badge badge-red">2.5%</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="page" id="page-stats">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sc-icon">👁</div><div class="sc-label">今日访问量 PV</div><div class="sc-value" style="color:var(--accent)">43,210</div><div class="sc-change down">↓ 3.2% 较昨日</div></div>
+      <div class="stat-card"><div class="sc-icon">👤</div><div class="sc-label">独立访客 UV</div><div class="sc-value" style="color:var(--success)">12,840</div><div class="sc-change up">↑ 6.8%</div></div>
+      <div class="stat-card"><div class="sc-icon">⏱</div><div class="sc-label">平均停留时长</div><div class="sc-value" style="color:var(--warning)">12.4<span style="font-size:1rem">分</span></div><div class="sc-change up">↑ 1.8分</div></div>
+      <div class="stat-card"><div class="sc-icon">📤</div><div class="sc-label">跳出率</div><div class="sc-value" style="color:var(--danger)">28.4%</div><div class="sc-change up">↓ 2.1% 改善</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <div class="chart-title">本周每日访问趋势</div>
+        <div class="bar-chart" id="statsChart"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">访问来源</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>🔍 搜索引擎</span><span style="color:var(--accent);font-family:'IBM Plex Mono',monospace">42.3%</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:42.3%;background:var(--accent);border-radius:3px;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>🔗 直接访问</span><span style="color:var(--success);font-family:'IBM Plex Mono',monospace">28.1%</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:28.1%;background:var(--success);border-radius:3px;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>📱 社交媒体</span><span style="color:var(--accent2);font-family:'IBM Plex Mono',monospace">18.4%</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:18.4%;background:var(--accent2);border-radius:3px;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:5px;"><span>🌐 其他网站</span><span style="color:var(--warning);font-family:'IBM Plex Mono',monospace">11.2%</span></div><div style="height:6px;background:#1a2035;border-radius:3px;"><div style="height:100%;width:11.2%;background:var(--warning);border-radius:3px;"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-box">
+      <div class="table-header"><h3>📋 热门页面</h3></div>
+      <table>
+        <tr><th>页面</th><th>浏览量</th><th>独立访客</th><th>平均时长</th><th>跳出率</th></tr>
+        <tr><td>🏠 首页</td><td style="font-family:'IBM Plex Mono',monospace">18,420</td><td style="font-family:'IBM Plex Mono',monospace">8,210</td><td style="font-family:'IBM Plex Mono',monospace">2m 14s</td><td><span class="badge badge-yellow">32.1%</span></td></tr>
+        <tr><td>🚀 星际战士</td><td style="font-family:'IBM Plex Mono',monospace">8,340</td><td style="font-family:'IBM Plex Mono',monospace">3,120</td><td style="font-family:'IBM Plex Mono',monospace">18m 42s</td><td><span class="badge badge-green">8.4%</span></td></tr>
+        <tr><td>🏆 排行榜</td><td style="font-family:'IBM Plex Mono',monospace">6,280</td><td style="font-family:'IBM Plex Mono',monospace">2,840</td><td style="font-family:'IBM Plex Mono',monospace">5m 33s</td><td><span class="badge badge-green">14.2%</span></td></tr>
+        <tr><td>🏎️ 极速赛车</td><td style="font-family:'IBM Plex Mono',monospace">5,920</td><td style="font-family:'IBM Plex Mono',monospace">2,100</td><td style="font-family:'IBM Plex Mono',monospace">22m 10s</td><td><span class="badge badge-green">6.8%</span></td></tr>
+        <tr><td>🧩 益智迷宫</td><td style="font-family:'IBM Plex Mono',monospace">4,250</td><td style="font-family:'IBM Plex Mono',monospace">1,980</td><td style="font-family:'IBM Plex Mono',monospace">14m 28s</td><td><span class="badge badge-green">10.1%</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// LOGIN
+function doAdminLogin(){
+  const u=document.getElementById('adminUser').value.trim();
+  const p=document.getElementById('adminPass').value.trim();
+  if(u==='admin'&&p==='admin123'){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainContent').style.display='flex';
+    document.getElementById('mainContent').style.flexDirection='column';
+    initCharts();
+    startLiveCounters();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+    setTimeout(()=>document.getElementById('loginErr').style.display='none',3000);
+  }
+}
+document.getElementById('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')doAdminLogin();});
+
+function doLogout(){
+  document.getElementById('mainContent').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('adminPass').value='';
+}
+
+// NAV
+const pageTitles={dashboard:'数据概览',users:'用户管理',games:'游戏管理',ads:'广告收入',stats:'访问统计'};
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('pageTitle').textContent=pageTitles[id];
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+// TOAST
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// FILTER TABLE
+function filterTable(id,q){
+  const rows=document.getElementById(id).querySelectorAll('tr:not(:first-child)');
+  rows.forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});
+}
+
+// REFRESH
+function refreshData(){
+  showToast('✅ 数据已刷新');
+  document.getElementById('onlineUsers').textContent=(1200+Math.floor(Math.random()*200)).toLocaleString();
+}
+
+// LIVE COUNTERS
+function startLiveCounters(){
+  let online=1284;
+  setInterval(()=>{
+    online+=Math.floor(Math.random()*20)-8;
+    online=Math.max(900,Math.min(1800,online));
+    document.getElementById('onlineUsers').textContent=online.toLocaleString();
+  },3000);
+}
+
+// BAR CHART
+function drawBarChart(containerId,data,color){
+  const c=document.getElementById(containerId);
+  if(!c)return;
+  c.innerHTML='';
+  const max=Math.max(...data.values);
+  data.values.forEach((v,i)=>{
+    const wrap=document.createElement('div');wrap.className='bar-wrap';
+    const bar=document.createElement('div');bar.className='bar';
+    bar.style.cssText=`height:${(v/max)*100}%;background:${color};opacity:${0.5+0.5*(v/max)};`;
+    bar.title=v.toLocaleString();
+    const lbl=document.createElement('div');lbl.className='bar-label';lbl.textContent=data.labels[i];
+    wrap.appendChild(bar);wrap.appendChild(lbl);c.appendChild(wrap);
+  });
+}
+
+// DONUT CHART
+function drawDonut(){
+  const data=[
+    {label:'星际战士',value:32,color:'#63b3ed'},
+    {label:'竞技擂台',value:24,color:'#f6ad55'},
+    {label:'益智迷宫',value:18,color:'#68d391'},
+    {label:'极速赛车',value:16,color:'#fc8181'},
+    {label:'其他',value:10,color:'#4a5568'},
+  ];
+  const svg=document.getElementById('donutSvg');
+  const legend=document.getElementById('donutLegend');
+  if(!svg||!legend)return;
+  const total=data.reduce((a,b)=>a+b.value,0);
+  let angle=-Math.PI/2;const R=50,r=30,cx=60,cy=60;
+  svg.innerHTML='';
+  data.forEach(d=>{
+    const sweep=2*Math.PI*(d.value/total);
+    const x1=cx+R*Math.cos(angle),y1=cy+R*Math.sin(angle);
+    const x2=cx+R*Math.cos(angle+sweep),y2=cy+R*Math.sin(angle+sweep);
+    const x3=cx+r*Math.cos(angle+sweep),y3=cy+r*Math.sin(angle+sweep);
+    const x4=cx+r*Math.cos(angle),y4=cy+r*Math.sin(angle);
+    const large=sweep>Math.PI?1:0;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${x1},${y1} A${R},${R},0,${large},1,${x2},${y2} L${x3},${y3} A${r},${r},0,${large},0,${x4},${y4} Z`);
+    path.setAttribute('fill',d.color);path.setAttribute('opacity','0.85');
+    svg.appendChild(path);angle+=sweep;
+  });
+  legend.innerHTML='';
+  data.forEach(d=>{
+    const item=document.createElement('div');item.className='legend-item';
+    item.innerHTML=`<div style="display:flex;align-items:center;"><div class="legend-dot" style="background:${d.color}"></div><span>${d.label}</span></div><span style="font-family:'IBM Plex Mono',monospace;color:${d.color}">${d.value}%</span>`;
+    legend.appendChild(item);
+  });
+}
+
+// SPARKLINES
+function drawSparklines(){
+  for(let i=1;i<=7;i++){
+    const sp=document.getElementById('sp'+i);
+    if(!sp)continue;sp.innerHTML='';
+    const vals=Array.from({length:7},()=>20+Math.random()*80);
+    const max=Math.max(...vals);
+    vals.forEach(v=>{
+      const b=document.createElement('div');b.className='spark-bar';
+      b.style.height=(v/max*100)+'%';
+      sp.appendChild(b);
+    });
+  }
+}
+
+function initCharts(){
+  drawBarChart('visitChart',{labels:['周一','周二','周三','周四','周五','周六','周日'],values:[38200,42100,35800,44200,48600,52100,43210]},'#63b3ed');
+  drawBarChart('adChart',{labels:['1','3','5','7','9','11','13','15','17','19','21','23','25','27','29'],values:[240,280,310,290,320,380,400,350,420,450,390,410,480,460,390]},'#f6ad55');
+  drawBarChart('statsChart',{labels:['周一','周二','周三','周四','周五','周六','周日'],values:[38200,42100,35800,44200,48600,52100,43210]},'#68d391');
+  drawDonut();
+  drawSparklines();
+}
+</script>
+</body>
+</html>
